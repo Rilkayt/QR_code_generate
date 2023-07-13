@@ -114,7 +114,7 @@ func buatQR(teks string , label string) image.Image{
 	kodeqr,_ = barcode.Scale(kodeqr,width,height)
 
 	// mengambil logo untuk disisipkan di qr
-	gambar,err_gambar := os.Open("D:/PROGRAM/go program/src/Project/Generate QR code/logo_sm_3.png")
+	gambar,err_gambar := os.Open("logo_sm_3.png")
 	if err_gambar != nil {
 		log.Fatal(err_gambar)
 	}
