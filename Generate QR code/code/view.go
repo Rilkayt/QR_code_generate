@@ -8,7 +8,6 @@ import (
 	"image/jpeg"
 	"image/png"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 
@@ -34,10 +33,6 @@ func main() {
 	// membuat server untuk mengakses endpoint
 	log.Fatal(http.ListenAndServe(":8000",router))
 }	
-
-func sayaHello(w http.ResponseWriter, r *http.Request)  {
-	fmt.Fprintln(w, "Hallo dunia")
-}
 
 // function untuk view qr saja
 func view(w http.ResponseWriter, r *http.Request)  {
@@ -69,47 +64,22 @@ func download(w http.ResponseWriter, r *http.Request)  {
 
 	jpeg.Encode(file,qr,&jpeg.Options{100})
 
-	w.Header().Set("Content-Disposition","attachment; filename=samrtlink.jpeg")
+	w.Header().Set("Content-Disposition","attachment; filename=smartlink.jpeg")
 	w.Header().Set("Content-Type","Image/image")
 
 	http.ServeFile(w, r, file_name)
-
-	// // mengambil inputan dari user dengan form value
-	// teks := r.FormValue("teks")
-	// label := r.FormValue("label")
-	// unduh := r.FormValue("unduh")
-
-	// // url := "http://localhost:8000/download?teks="+teks+"&label="+label+"&unduh="+unduh
-
-	// // http.Get(url)
-
-	// unduh_final := unduh + ".jpeg"
-	// // mengambil qr nya
-	// qr := buatQR(teks,label)
-
-
-	// // membuat file untuk disimpan di file
-	// if _,err := os.Stat("temp");os.IsNotExist(err){
-	// 	err := os.Mkdir("temp",os.ModePerm)
-	// 	if err != nil {
-	// 		http.Error(w,"error baris 79",http.StatusInternalServerError)
-	// 		return
-	// 	}
-	// }
-
-	// w.Header().Set("Content-Disposition", "attachment; filename=SmartQR.png")
-	// w.Header().Set("Content-Type", "image/png")
-
-	// file_final := filepath.Join("temp",unduh_final)
-	// enkode := jpeg.Encode(w,qr,&jpeg.Options{100})
-	// err := imaging.Save(qr,unduh_final,enkode)
-
-	// http.ServeFile(w,r,file_final)
 }
+
+var (
+	width = 512
+	height = 500
+	width_logo = width/9
+	height_logo = height/9
+	label_size = height + 35
+)
 
 //buat QR nya
 func buatQR(teks string , label string) image.Image{	
-
 
 	//random teks nya
 	text := teks
@@ -122,8 +92,6 @@ func buatQR(teks string , label string) image.Image{
 	kodeqr , _:= qr.Encode(random_teks,qr.M,qr.Auto)
 
 	// mengatur lebar dan tinggi dari qr
-	width := 300
-	height := 295
 	kodeqr,_ = barcode.Scale(kodeqr,width,height)
 
 	// mengambil logo untuk disisipkan di qr
@@ -136,31 +104,13 @@ func buatQR(teks string , label string) image.Image{
 	gambar_decode,_ := png.Decode(gambar)
 
 	// unutk mengubah ukuran pada gambar atau logo yang disisipkan
-	buat_qr := resize.Resize(uint(width)/5, uint(height)/5, gambar_decode, resize.Bilinear) 
+	buat_qr := resize.Resize(uint(width_logo), uint(height_logo), gambar_decode, resize.Bilinear) 
 
 	// mendapatkan gambar qr final yang telah di setting
 	gambar_final := settingFinal(kodeqr,buat_qr,width,height,label)
 
 	// mengembalikan variabel gambar_final
 	return gambar_final
-
-	// w.Header().Set("Content-type","image/jpeg") 
-	// final := jpeg.Encode(w,kodeqr,&jpeg.Options{100})
-	// if final == nil {
-	// 	http.Error(w,"gagal menampilkan qr code",http.StatusInternalServerError)
-	// 	return
-	// }
-	// //buat nama filenya
-	// save , err_save:= os.Create("qr_pake_booler_20.jpg")
-	// if err_save != nil {
-	// 	log.Fatal(err_save)
-	// }
-
-	// //ini berfungsi untuk mengatur kualitas qr --> qr dimasukan kedalam file --> file baru ada qr nya
-	// final_qr := jpeg.Encode(save,gambar_final, &jpeg.Options{Quality: 100})
-	// if final_qr == nil {
-	// 	fmt.Println("qr selesai dibuat")
-	// }
 
 }
 
@@ -170,33 +120,21 @@ func settingFinal(kodeqr barcode.Barcode,gambar_decode image.Image,width int, he
 	// mendapatkan gambar label
 	label_final := buat_label(label)
 
-	// untuk lebar(x) dan tinggi(y)
-	x := width
-	y := height
-
 	// membuat kanvas kosong
-	kanvas:= image.NewNRGBA(image.Rect(0,0,x,y+25))
-	kotak := image.Rect(0,0,400,300)
-
-	// membuat color
-	random_warna_1 := rand.Int31n(256)
-	random_warna_2 := rand.Int31n(256)
-	random_warna_3 := rand.Int31n(256)
-	random_warna_4 := rand.Int31n(256)
-
-	warna := color.RGBA{uint8(random_warna_1), uint8(random_warna_2), uint8(random_warna_3), uint8(random_warna_4)}
+	kanvas:= image.NewNRGBA(image.Rect(0,0,width,label_size))
+	kotak := image.Rect(0,0,width,height)
 
 	// mendraw kanvas kosong dengan luasnya sesuai dengan bounds dari kanvas
-	draw.Draw(kanvas,kanvas.Bounds(),&image.Uniform{warna},image.ZP,draw.Over)
+	draw.Draw(kanvas,kanvas.Bounds(),&image.Uniform{image.White},image.ZP,draw.Over)
 	
 	// menambahkan qr di kanvas
 	draw.Draw(kanvas,kotak.Bounds().Add(image.Pt(0,0)),kodeqr,image.ZP,draw.Over)
 
 	// menambahkan logo di kanvas
-	draw.Draw(kanvas,kodeqr.Bounds().Add(image.Pt((width/2)-25,(height/3)+20)),gambar_decode,image.ZP,draw.Src)
+	draw.Draw(kanvas,kotak.Bounds().Add(image.Pt((width/2)-(width_logo/2),(height/2)-(height_logo/2))),gambar_decode,image.ZP,draw.Src)
 
 	// menambahkan label di kanvas
-	draw.Draw(kanvas,kanvas.Bounds().Add(image.Pt(0,y)),label_final,image.ZP,draw.Src)
+	draw.Draw(kanvas,kanvas.Bounds().Add(image.Pt(0,height)),label_final,image.ZP,draw.Src)
 
 	// mengembalikan kanvas yang telah di draw
 	return kanvas
@@ -228,18 +166,14 @@ func buat_label(label string) image.Image  {
 	// setting kualitas perpixel
 	setting.SetDPI(100)
 	// setting ukuran tulisan
-	setting.SetFontSize(14)	
-	var a int
-	a = 0
-	for i := 0; i < len(label); i++ {
-		a += 11
-	}
+	setting.SetFontSize((float64(width)/15)/2)	
+
 	// setting clip untuk menggambar tulisan
-	setting.SetClip(image.Rect(0,0,315,30))
+	setting.SetClip(image.Rect(0,0,width,label_size))
 
 	color_sm := color.NRGBA{1, 124, 254,225}
 	// membuat kanvas kosong
-	ambil := image.NewNRGBA(image.Rect(0,0,300,25))
+	ambil := image.NewNRGBA(image.Rect(0,0,width,label_size))
 	// mendraw kanvas dengan warna putih
 	draw.Draw(ambil,ambil.Bounds(),&image.Uniform{color_sm},image.ZP,draw.Src)
 	
@@ -250,42 +184,13 @@ func buat_label(label string) image.Image  {
 
 	// teks akan diikuti dengan kata QR + isi label
 	teks_final := label
-	
-	var x int
-	
-	if len(label) > 11 {
-		x = ambil.Bounds().Dx() / 4
-	} else if len(label) >= 5 && len(label) < 12{
-		x = (ambil.Bounds().Dx() / 3) + 10
-	} else if len(label) == 4 {
-		x = (ambil.Bounds().Dx() / 2) -10
-	}else if len(label) == 3 {
-		x = (ambil.Bounds().Dx() / 2)-13 
-	}else if len(label) == 2 {
-		x = (ambil.Bounds().Dx() / 2)
-	}else if len(label) == 1 {
-		x = (ambil.Bounds().Dx() / 2)
-	}
-	
-	fmt.Println(len(label))
-	
-	y := (ambil.Bounds().Dy()) - 5
-	fmt.Println(x)
 
 	// mendraw label dari string ke image dengan teks dari label dan posisi yang disesuaikan
-	setting.DrawString(teks_final,freetype.Pt(x,y))
+	setting.DrawString(teks_final,freetype.Pt((width/2)-(((len(label)*4)+10)),(width-height)+(width-height)))
 	fmt.Println(label)
 	// mengembalikan nilai ambil
 	return ambil
 }
-
-
-
-
-
-
-
-
 
 
 // func qrSettingsLogo(gambar image.Image , kodeqr barcode.Barcode) image.Image {
