@@ -7,12 +7,10 @@ import (
 	"image/draw"
 	"image/jpeg"
 	"image/png"
-	"io"
 	"log"
 	"math/rand"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/boombuler/barcode"
 	"github.com/boombuler/barcode/qr"
@@ -60,38 +58,53 @@ func view(w http.ResponseWriter, r *http.Request)  {
 // fungsi untuk download atau menyimpan gambar di komputer
 func download(w http.ResponseWriter, r *http.Request)  {
 
-	// mengambil inputan dari user dengan form value
 	teks := r.FormValue("teks")
 	label := r.FormValue("label")
-	unduh := r.FormValue("unduh")
 
-	unduh_final := unduh + ".jpeg"
-	// mengambil qr nya
+	file_name := label + ".jpeg"
+
 	qr := buatQR(teks,label)
 
-	// membuat file untuk disimpan di file
+	file,_ := os.Create(file_name)
 
-	
-	folder := "C:/Smartlink QR/"
-	os.MkdirAll(folder, os.ModePerm)
+	jpeg.Encode(file,qr,&jpeg.Options{100})
 
-	file_final := filepath.Join(folder,unduh_final)	
-	file,_ := os.Create(file_final)
-	name_file := io.Writer(file)
+	w.Header().Set("Content-Disposition","attachment; filename=samrtlink.jpeg")
+	w.Header().Set("Content-Type","Image/image")
 
-	// mengambil 3 karakter char terakhir
-	// tipe_data := unduh[(len(unduh)-3):]
+	http.ServeFile(w, r, file_name)
 
-	// penkondisian untuk menetukan tipe file yang digenerate
-	// if tipe_data == "png" {
-	// 	png.Encode(name_file,qr)
-	// }else if tipe_data == "jpeg" {
-	jpeg.Encode(name_file,qr,&jpeg.Options{Quality: 100})
-	// }else{
-	// 	log.Fatal("tipe tidak didukung")
+	// // mengambil inputan dari user dengan form value
+	// teks := r.FormValue("teks")
+	// label := r.FormValue("label")
+	// unduh := r.FormValue("unduh")
+
+	// // url := "http://localhost:8000/download?teks="+teks+"&label="+label+"&unduh="+unduh
+
+	// // http.Get(url)
+
+	// unduh_final := unduh + ".jpeg"
+	// // mengambil qr nya
+	// qr := buatQR(teks,label)
+
+
+	// // membuat file untuk disimpan di file
+	// if _,err := os.Stat("temp");os.IsNotExist(err){
+	// 	err := os.Mkdir("temp",os.ModePerm)
+	// 	if err != nil {
+	// 		http.Error(w,"error baris 79",http.StatusInternalServerError)
+	// 		return
+	// 	}
 	// }
 
-	http.ServeFile(w,r,file_final)
+	// w.Header().Set("Content-Disposition", "attachment; filename=SmartQR.png")
+	// w.Header().Set("Content-Type", "image/png")
+
+	// file_final := filepath.Join("temp",unduh_final)
+	// enkode := jpeg.Encode(w,qr,&jpeg.Options{100})
+	// err := imaging.Save(qr,unduh_final,enkode)
+
+	// http.ServeFile(w,r,file_final)
 }
 
 //buat QR nya
@@ -109,12 +122,12 @@ func buatQR(teks string , label string) image.Image{
 	kodeqr , _:= qr.Encode(random_teks,qr.M,qr.Auto)
 
 	// mengatur lebar dan tinggi dari qr
-	width := 315
-	height := 290 
+	width := 300
+	height := 295
 	kodeqr,_ = barcode.Scale(kodeqr,width,height)
 
 	// mengambil logo untuk disisipkan di qr
-	gambar,err_gambar := os.Open("logo_sm_3.png")
+	gambar,err_gambar := os.Open("Generate QR code/logo_sm_3.png")
 	if err_gambar != nil {
 		log.Fatal(err_gambar)
 	}
@@ -126,7 +139,7 @@ func buatQR(teks string , label string) image.Image{
 	buat_qr := resize.Resize(uint(width)/5, uint(height)/5, gambar_decode, resize.Bilinear) 
 
 	// mendapatkan gambar qr final yang telah di setting
-	gambar_final := settingFinal(kodeqr,buat_qr,380,389,label)
+	gambar_final := settingFinal(kodeqr,buat_qr,width,height,label)
 
 	// mengembalikan variabel gambar_final
 	return gambar_final
@@ -162,7 +175,7 @@ func settingFinal(kodeqr barcode.Barcode,gambar_decode image.Image,width int, he
 	y := height
 
 	// membuat kanvas kosong
-	kanvas:= image.NewNRGBA(image.Rect(0,0,x,y))
+	kanvas:= image.NewNRGBA(image.Rect(0,0,x,y+25))
 	kotak := image.Rect(0,0,400,300)
 
 	// membuat color
@@ -177,13 +190,13 @@ func settingFinal(kodeqr barcode.Barcode,gambar_decode image.Image,width int, he
 	draw.Draw(kanvas,kanvas.Bounds(),&image.Uniform{warna},image.ZP,draw.Over)
 	
 	// menambahkan qr di kanvas
-	draw.Draw(kanvas,kotak.Bounds().Add(image.Pt(32,30)),kodeqr,image.ZP,draw.Over)
+	draw.Draw(kanvas,kotak.Bounds().Add(image.Pt(0,0)),kodeqr,image.ZP,draw.Over)
 
 	// menambahkan logo di kanvas
 	draw.Draw(kanvas,kodeqr.Bounds().Add(image.Pt((width/2)-25,(height/3)+20)),gambar_decode,image.ZP,draw.Src)
 
 	// menambahkan label di kanvas
-	draw.Draw(kanvas,kanvas.Bounds().Add(image.Pt((x/3)-95,y-50)),label_final,image.ZP,draw.Src)
+	draw.Draw(kanvas,kanvas.Bounds().Add(image.Pt(0,y)),label_final,image.ZP,draw.Src)
 
 	// mengembalikan kanvas yang telah di draw
 	return kanvas
@@ -202,7 +215,7 @@ func random_kode_view(teks string) string  {
 func buat_label(label string) image.Image  {	
 
 	// mengambil file font
-	gaya_tulisan,_ := os.ReadFile("D:/PROGRAM/go program/src/Project/ostrich-sans/ostrich-regular.ttf")
+	gaya_tulisan,_ := os.ReadFile("PakenhamBl Italic.ttf")
 	
 	// membuat agar font tadi bisa di terhubung dengan library freetype
 	gaya,_ := truetype.Parse(gaya_tulisan)
@@ -215,7 +228,7 @@ func buat_label(label string) image.Image  {
 	// setting kualitas perpixel
 	setting.SetDPI(100)
 	// setting ukuran tulisan
-	setting.SetFontSize(24)	
+	setting.SetFontSize(14)	
 	var a int
 	a = 0
 	for i := 0; i < len(label); i++ {
@@ -224,16 +237,16 @@ func buat_label(label string) image.Image  {
 	// setting clip untuk menggambar tulisan
 	setting.SetClip(image.Rect(0,0,315,30))
 
-
+	color_sm := color.NRGBA{1, 124, 254,225}
 	// membuat kanvas kosong
-	ambil := image.NewNRGBA(image.Rect(0,0,315,30))
+	ambil := image.NewNRGBA(image.Rect(0,0,300,25))
 	// mendraw kanvas dengan warna putih
-	draw.Draw(ambil,ambil.Bounds(),image.White,image.ZP,draw.Src)
+	draw.Draw(ambil,ambil.Bounds(),&image.Uniform{color_sm},image.ZP,draw.Src)
 	
 	// setting untuk gambar nya ditulis atau targetnya di destination
 	setting.SetDst(ambil)
 	// setting untuk tulisan dengan warna hitam
-	setting.SetSrc(image.Black)
+	setting.SetSrc(image.White)
 
 	// teks akan diikuti dengan kata QR + isi label
 	teks_final := label
@@ -265,6 +278,15 @@ func buat_label(label string) image.Image  {
 	// mengembalikan nilai ambil
 	return ambil
 }
+
+
+
+
+
+
+
+
+
 
 // func qrSettingsLogo(gambar image.Image , kodeqr barcode.Barcode) image.Image {
 
