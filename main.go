@@ -67,7 +67,8 @@ func download(w http.ResponseWriter, r *http.Request)  {
 	w.Header().Set("Content-Disposition","attachment; filename=smartlink.jpeg")
 	w.Header().Set("Content-Type","Image/image")
 
-	http.ServeFile(w, r, file_name)
+
+	http.ServeFile(w, r, file_name)	
 }
 
 var (
@@ -95,7 +96,7 @@ func buatQR(teks string , label string) image.Image{
 	kodeqr,_ = barcode.Scale(kodeqr,width,height)
 
 	// mengambil logo untuk disisipkan di qr
-	gambar,err_gambar := os.Open("logo_sm_3.png")
+	gambar,err_gambar := os.Open("Generate QR code/logo_sm_3.png")
 	if err_gambar != nil {
 		log.Fatal(err_gambar)
 	}
@@ -153,7 +154,10 @@ func random_kode_view(teks string) string  {
 func buat_label(label string) image.Image  {	
 
 	// mengambil file font
-	gaya_tulisan,_ := os.ReadFile("PakenhamBl Italic.ttf")
+	gaya_tulisan,err := os.ReadFile("PakenhamBl_Italic.ttf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	
 	// membuat agar font tadi bisa di terhubung dengan library freetype
 	gaya,_ := truetype.Parse(gaya_tulisan)
