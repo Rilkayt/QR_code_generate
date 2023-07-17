@@ -166,7 +166,7 @@ func buat_label(label string) image.Image  {
 	// setting kualitas perpixel
 	setting.SetDPI(100)
 	// setting ukuran tulisan
-	setting.SetFontSize((float64(width)/15)/2)	
+	setting.SetFontSize((float64(width)/15)/3)	
 
 	// setting clip untuk menggambar tulisan
 	setting.SetClip(image.Rect(0,0,width,label_size))
@@ -186,7 +186,7 @@ func buat_label(label string) image.Image  {
 	teks_final := label
 
 	// mendraw label dari string ke image dengan teks dari label dan posisi yang disesuaikan
-	setting.DrawString(teks_final,freetype.Pt((width/2)-(((len(label)*4)+10)),(width-height)+(width-height)))
+	setting.DrawString(teks_final,freetype.Pt((width/2)-(((len(label)*3)+12)),(width-height)+(width-height)))
 	fmt.Println(label)
 	// mengembalikan nilai ambil
 	return ambil
