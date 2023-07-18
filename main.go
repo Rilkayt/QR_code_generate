@@ -72,11 +72,18 @@ func download(w http.ResponseWriter, r *http.Request)  {
 }
 
 var (
-	width = 512
-	height = 500
-	width_logo = width/9
-	height_logo = height/9
-	label_size = height + 35
+	//ukuran kanvas
+	width = 1125
+	height = width-45
+	// height mohon dikurangi , untuk penambahan di var label_size
+
+	//ukuran qr ,logo,label
+	width_logo = width/12
+	height_logo = height/12
+	label_size = height + 50
+
+	qr_width = width - 50
+	qr_height = height - 50
 )
 
 //buat QR nya
@@ -93,7 +100,7 @@ func buatQR(teks string , label string) image.Image{
 	kodeqr , _:= qr.Encode(random_teks,qr.M,qr.Auto)
 
 	// mengatur lebar dan tinggi dari qr
-	kodeqr,_ = barcode.Scale(kodeqr,width,height)
+	kodeqr,_ = barcode.Scale(kodeqr,width-50,height-50)
 
 	// mengambil logo untuk disisipkan di qr
 	gambar,err_gambar := os.Open("Generate QR code/logo_sm_3.png")
@@ -129,10 +136,10 @@ func settingFinal(kodeqr barcode.Barcode,gambar_decode image.Image,width int, he
 	draw.Draw(kanvas,kanvas.Bounds(),&image.Uniform{image.White},image.ZP,draw.Over)
 	
 	// menambahkan qr di kanvas
-	draw.Draw(kanvas,kotak.Bounds().Add(image.Pt(0,0)),kodeqr,image.ZP,draw.Over)
+	draw.Draw(kanvas,kotak.Bounds().Add(image.Pt(22,22)),kodeqr,image.ZP,draw.Over)
 
 	// menambahkan logo di kanvas
-	draw.Draw(kanvas,kotak.Bounds().Add(image.Pt((width/2)-(width_logo/2),(height/2)-(height_logo/2))),gambar_decode,image.ZP,draw.Src)
+	draw.Draw(kanvas,kotak.Bounds().Add(image.Pt((width/2)-(width_logo/2),(height/2)-(height_logo/2)-3)),gambar_decode,image.ZP,draw.Src)
 
 	// menambahkan label di kanvas
 	draw.Draw(kanvas,kanvas.Bounds().Add(image.Pt(0,height)),label_final,image.ZP,draw.Src)
@@ -190,8 +197,17 @@ func buat_label(label string) image.Image  {
 	teks_final := label
 
 	// mendraw label dari string ke image dengan teks dari label dan posisi yang disesuaikan
-	setting.DrawString(teks_final,freetype.Pt((width/2)-(((len(label)*3)+12)),(width-height)+(width-height)))
-	fmt.Println(label)
+	// setting.DrawString(teks_final,freetype.Pt((width/2)-(((len(label)*5)+(width-height))),30))
+	if len(label) >= 60 {
+		setting.DrawString(teks_final,freetype.Pt((width/2)-((len(label)*8)),30))
+		fmt.Println("a")
+	}
+	if len(label) < 60 {
+		setting.DrawString(teks_final,freetype.Pt((width/2)-((len(label)*8)),30))
+		fmt.Println("b")
+	}
+	
+	fmt.Println("panjang label",len(label))
 	// mengembalikan nilai ambil
 	return ambil
 }
